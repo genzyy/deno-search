@@ -19,10 +19,12 @@ interface Yargs<ArgvReturnType> {
 interface UserArguments {
   text: string;
   extension?: string;
+  replace?: string;
 }
 
 interface FilterOptions {
   extension?: string;
+  replace?: string;
 }
 
 const userArguments: UserArguments = (
@@ -30,6 +32,7 @@ const userArguments: UserArguments = (
 )
   .describe('text', 'the text to search within the files of current directory')
   .describe('extension', 'enter the file extension')
+  .describe('replace', 'the word which will be replacing the given text')
   .demandOption(['text']).argv;
 
 //console.log(userArguments);
@@ -70,7 +73,7 @@ for (const file of files) {
   const contents = await Deno.readTextFile(file);
   //console.log(contents);
   const lines = contents.split('\n');
-  lines.forEach((line: any, index: any) => {
+  lines.forEach(async (line: any, index: any) => {
     if (line.includes(userArguments.text)) {
       const matchesForFile = Matches.get(file) || new Set<Match>();
       matchesForFile.add({
@@ -79,6 +82,15 @@ for (const file of files) {
         lineText: line
       });
       Matches.set(file, matchesForFile);
+
+      if (userArguments.replace) {
+        const newContents = contents.replaceAll(
+          userArguments.text,
+          userArguments.replace
+        );
+        await Deno.writeTextFile(file, newContents);
+        console.log('Done!');
+      }
     }
   });
 }
